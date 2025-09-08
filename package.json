@@ -1,0 +1,35 @@
+{
+  "name": "apple-hello-effect",
+  "version": "1.0.0",
+  "description": "Animated handwriting effect inspired by Apple. Zero-config JavaScript library for beautiful letter-by-letter writing animations.",
+  "main": "dist/apple-hello.min.js",
+  "module": "src/apple-hello.js",
+  "unpkg": "dist/apple-hello.min.js",
+  "jsdelivr": "dist/apple-hello.min.js",
+  "files": [
+    "dist/",
+    "src/"
+  ],
+  "scripts": {
+    "build": "echo 'Build process would go here'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ricardofuentes-dev/apple-hello-effect.git"
+  },
+  "keywords": [
+    "animation",
+    "handwriting",
+    "apple",
+    "svg",
+    "writing-effect",
+    "javascript",
+    "library"
+  ],
+  "author": "Ricardo Fuentes",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ricardofuentes-dev/apple-hello-effect/issues"
+  },
+  "homepage": "https://github.com/ricardofuentes-dev/apple-hello-effect#readme"
+}
