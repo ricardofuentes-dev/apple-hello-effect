@@ -1,9 +1,9 @@
 /**
  * AppleHello.js v1.0.0
  * Animated handwriting effect inspired by Apple
- * https://github.com/[tu-usuario]/apple-hello-effect
+ * https://github.com/ricardofuentes-dev/apple-hello-effect
  * 
- * Copyright (c) 2025 [Tu Nombre]
+ * Copyright (c) 2025 Ricardo Fuentes
  * Licensed under the MIT License
  */
 (function (global, factory) {
@@ -128,6 +128,7 @@
         Object.entries(SVG_DATA.paths).forEach(([key, pathData]) => {
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', pathData);
+            // FIXED: Use setAttribute instead of className for SVG compatibility
             path.setAttribute('class', `letter-${key}`);
             svg.appendChild(path);
         });
@@ -159,6 +160,7 @@
          * Initialize the component
          */
         _init() {
+            // FIXED: Use addClass instead of direct className assignment
             addClass(this.element, 'apple-hello');
             this.svg = createSVG(this.config);
             this.element.appendChild(this.svg);
@@ -291,6 +293,7 @@
             if (this.svg?.parentNode) {
                 this.svg.parentNode.removeChild(this.svg);
             }
+            // FIXED: Use removeClass instead of direct className assignment
             removeClass(this.element, 'apple-hello');
         }
     }
