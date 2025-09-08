@@ -1,7 +1,10 @@
 /**
  * AppleHello.js v1.0.0
  * Animated handwriting effect inspired by Apple
- * (c) 2025 Ricardo Fuentes | MIT License
+ * https://github.com/[tu-usuario]/apple-hello-effect
+ * 
+ * Copyright (c) 2025 [Tu Nombre]
+ * Licensed under the MIT License
  */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -12,15 +15,21 @@
     const VERSION = '1.0.0';
     const PREFIX = '[AppleHello]';
     
+    // Default configuration
     const DEFAULTS = {
         color: '#ffffff',
-        stroke_width: 8,
+        strokeWidth: 14.8883,
         height: 80,
-        auto_start: true,
-        duration: 3500,
-        ease: 'ease-in-out'
+        autoStart: true,
+        hDuration: 800,
+        elloDuration: 2800,
+        elloDelay: 700,
+        ease: 'ease-in-out',
+        opacityDuration: 400,
+        startDelay: 500
     };
 
+    // SVG path data for "hello"
     const SVG_DATA = {
         viewBox: '0 0 638 200',
         paths: {
@@ -29,22 +38,39 @@
         }
     };
 
+    // CSS styles
     const CSS = `
-        .apple-hello{display:inline-block}
-        .apple-hello svg{fill:none;stroke-linecap:round;stroke-linejoin:round}
-        .apple-hello path{fill:none;opacity:0;transition:none}
+        .apple-hello {
+            display: inline-block;
+        }
+        .apple-hello svg {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .apple-hello path {
+            fill: none;
+            opacity: 0;
+            transition: none;
+        }
     `;
 
-    let style_injected = false;
+    let stylesInjected = false;
 
-    function inject_styles() {
-        if (style_injected) return;
+    /**
+     * Inject CSS styles into the document head
+     */
+    function injectStyles() {
+        if (stylesInjected) return;
         const style = document.createElement('style');
         style.textContent = CSS;
         document.head.appendChild(style);
-        style_injected = true;
+        stylesInjected = true;
     }
 
+    /**
+     * Log messages with consistent formatting
+     */
     function log(message, type = 'info') {
         if (typeof console !== 'undefined') {
             const method = type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log';
@@ -52,134 +78,220 @@
         }
     }
 
-    function resolve_element(target) {
+    /**
+     * Resolve target element from string selector or element
+     */
+    function resolveElement(target) {
         if (!target) return null;
         if (typeof target === 'string') return document.querySelector(target);
         if (target instanceof HTMLElement) return target;
         return null;
     }
 
-    function create_svg(config) {
+    /**
+     * Safely add class to element (handles SVG compatibility)
+     */
+    function addClass(element, className) {
+        if (element.classList) {
+            element.classList.add(className);
+        } else {
+            const classes = element.getAttribute('class') || '';
+            if (!classes.includes(className)) {
+                element.setAttribute('class', (classes + ' ' + className).trim());
+            }
+        }
+    }
+
+    /**
+     * Safely remove class from element (handles SVG compatibility)
+     */
+    function removeClass(element, className) {
+        if (element.classList) {
+            element.classList.remove(className);
+        } else {
+            const classes = element.getAttribute('class') || '';
+            const newClasses = classes.replace(new RegExp('\\s*' + className + '\\s*', 'g'), ' ').trim();
+            element.setAttribute('class', newClasses);
+        }
+    }
+
+    /**
+     * Create SVG element with paths
+     */
+    function createSVG(config) {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', SVG_DATA.viewBox);
         svg.style.height = `${config.height}px`;
         svg.style.stroke = config.color;
-        svg.style.strokeWidth = config.stroke_width;
+        svg.style.strokeWidth = config.strokeWidth;
 
-        Object.entries(SVG_DATA.paths).forEach(([key, path_data]) => {
+        Object.entries(SVG_DATA.paths).forEach(([key, pathData]) => {
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', path_data);
-            path.className = `letter-${key}`;
+            path.setAttribute('d', pathData);
+            path.setAttribute('class', `letter-${key}`);
             svg.appendChild(path);
         });
 
         return svg;
     }
 
+    /**
+     * AppleHello main class
+     */
     class AppleHello {
         constructor(target, options = {}) {
             this.config = { ...DEFAULTS, ...options };
-            this.element = resolve_element(target);
+            this.element = resolveElement(target);
             this.svg = null;
             this.timeouts = [];
-            this.is_animating = false;
+            this.isAnimating = false;
 
             if (!this.element) {
                 log('Invalid target element', 'error');
                 return;
             }
 
-            inject_styles();
+            injectStyles();
             this._init();
         }
 
+        /**
+         * Initialize the component
+         */
         _init() {
-            this.element.className = `${this.element.className} apple-hello`.trim();
-            this.svg = create_svg(this.config);
+            addClass(this.element, 'apple-hello');
+            this.svg = createSVG(this.config);
             this.element.appendChild(this.svg);
-            this._setup_paths();
+            this._setupPaths();
 
-            if (this.config.auto_start) {
-                requestAnimationFrame(() => this.start());
+            if (this.config.autoStart) {
+                setTimeout(() => this.start(), this.config.startDelay);
             }
         }
 
-        _setup_paths() {
+        /**
+         * Setup SVG paths for animation
+         */
+        _setupPaths() {
             this.svg.querySelectorAll('path').forEach(path => {
                 const length = path.getTotalLength();
                 path.style.strokeDasharray = length;
                 path.style.strokeDashoffset = length;
                 path.style.opacity = '0';
+                path.style.transition = 'none';
             });
         }
 
-        _animate_path(selector, delay, duration) {
+        /**
+         * Animate a single path
+         */
+        _animatePath(selector, config) {
             const path = this.svg.querySelector(selector);
             if (!path) return;
 
             const length = path.getTotalLength();
+            
+            // Reset path
+            path.style.transition = 'none';
+            path.style.strokeDasharray = length;
+            path.style.strokeDashoffset = length;
+            path.style.opacity = '0';
 
-            this.timeouts.push(setTimeout(() => {
-                path.style.transition = `opacity ${duration * 0.3}ms ease`;
+            // Animate opacity
+            const opacityTimeout = setTimeout(() => {
+                path.style.transition = `opacity ${config.opacityDuration}ms ease`;
                 path.style.opacity = '1';
-            }, delay));
+            }, config.opacityDelay);
 
-            this.timeouts.push(setTimeout(() => {
-                path.style.transition = `stroke-dashoffset ${duration}ms ${this.config.ease}`;
+            // Animate drawing
+            const drawTimeout = setTimeout(() => {
+                path.style.transition = `stroke-dashoffset ${config.duration}ms ${this.config.ease}`;
                 path.style.strokeDashoffset = '0';
-            }, delay));
+            }, config.delay);
+
+            this.timeouts.push(opacityTimeout, drawTimeout);
         }
 
+        /**
+         * Start the animation
+         */
         start() {
-            if (this.is_animating) return this;
+            if (this.isAnimating) return this;
             
-            this.is_animating = true;
+            this.isAnimating = true;
             this.stop();
-            this._setup_paths();
+            this._setupPaths();
 
-            const h_duration = this.config.duration * 0.23;
-            const ello_duration = this.config.duration * 0.77;
-            const ello_delay = this.config.duration * 0.2;
+            // Animate 'h'
+            this._animatePath('.letter-h', {
+                duration: this.config.hDuration,
+                delay: 0,
+                opacityDuration: this.config.opacityDuration,
+                opacityDelay: 0
+            });
 
-            this._animate_path('.letter-h', 0, h_duration);
-            this._animate_path('.letter-ello', ello_delay, ello_duration);
+            // Animate 'ello'
+            this._animatePath('.letter-ello', {
+                duration: this.config.elloDuration,
+                delay: this.config.elloDelay,
+                opacityDuration: this.config.opacityDuration * 1.75,
+                opacityDelay: this.config.elloDelay
+            });
+
+            // Reset animation state
+            const totalDuration = Math.max(
+                this.config.hDuration,
+                this.config.elloDelay + this.config.elloDuration
+            );
 
             this.timeouts.push(setTimeout(() => {
-                this.is_animating = false;
-            }, this.config.duration));
+                this.isAnimating = false;
+            }, totalDuration));
 
             return this;
         }
 
+        /**
+         * Stop the animation
+         */
         stop() {
             this.timeouts.forEach(clearTimeout);
             this.timeouts = [];
-            this.is_animating = false;
+            this.isAnimating = false;
             return this;
         }
 
+        /**
+         * Restart the animation
+         */
         restart() {
             this.stop();
-            requestAnimationFrame(() => this.start());
+            setTimeout(() => this.start(), 50);
             return this;
         }
 
+        /**
+         * Update configuration
+         */
         update(options) {
             Object.assign(this.config, options);
             if (this.svg) {
                 this.svg.style.height = `${this.config.height}px`;
                 this.svg.style.stroke = this.config.color;
-                this.svg.style.strokeWidth = this.config.stroke_width;
+                this.svg.style.strokeWidth = this.config.strokeWidth;
             }
             return this;
         }
 
+        /**
+         * Destroy the instance
+         */
         destroy() {
             this.stop();
             if (this.svg?.parentNode) {
                 this.svg.parentNode.removeChild(this.svg);
             }
-            this.element.className = this.element.className.replace(/\s*apple-hello/g, '').trim();
+            removeClass(this.element, 'apple-hello');
         }
     }
 
@@ -198,9 +310,11 @@
             // Read data attributes
             if (el.dataset.color) config.color = el.dataset.color;
             if (el.dataset.height) config.height = parseInt(el.dataset.height);
-            if (el.dataset.strokeWidth) config.stroke_width = parseInt(el.dataset.strokeWidth);
-            if (el.dataset.duration) config.duration = parseInt(el.dataset.duration);
-            if (el.dataset.autoStart === 'false') config.auto_start = false;
+            if (el.dataset.strokeWidth) config.strokeWidth = parseFloat(el.dataset.strokeWidth);
+            if (el.dataset.hDuration) config.hDuration = parseInt(el.dataset.hDuration);
+            if (el.dataset.elloDuration) config.elloDuration = parseInt(el.dataset.elloDuration);
+            if (el.dataset.elloDelay) config.elloDelay = parseInt(el.dataset.elloDelay);
+            if (el.dataset.autoStart === 'false') config.autoStart = false;
 
             instances.push(new AppleHello(el, config));
         });
